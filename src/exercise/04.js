@@ -3,10 +3,27 @@
 
 import * as React from 'react'
 
+function useLocalStorageState(key, defaultValue){
+  const [state, setState] = React.useState(() => {
+    const item = window.localStorage.getItem(key);
+    if (item) {
+      return JSON.parse(item);
+    }else{
+      return defaultValue
+    } 
+  })
+  React.useEffect( ()=>{
+    console.log("calling useEffect")
+    window.localStorage.setItem(key, JSON.stringify(state))}, [key, state]);
+  
+  return [state, setState] 
+}
+
 function Board() {
   // 🐨 squares is the state for this component. Add useState for squares
-  const squares = Array(9).fill(null)
 
+  // const [squares, setSquares] = React.useState(Array(9).fill(null))
+  const [squares, setSquares] = useLocalStorageState('squares', Array(9).fill(null)); 
   // 🐨 We'll need the following bits of derived state:
   // - nextValue ('X' or 'O')
   // - winner ('X', 'O', or null)
@@ -20,6 +37,9 @@ function Board() {
     // 🐨 first, if there's already winner or there's already a value at the
     // given square index (like someone clicked a square that's already been
     // clicked), then return early so we don't make any state changes
+    if (squares[square] != null || calculateWinner(squares)) {
+      return
+    }
     //
     // 🦉 It's typically a bad idea to mutate or directly change state in React.
     // Doing so can lead to subtle bugs that can easily slip into production.
@@ -31,9 +51,13 @@ function Board() {
     // 💰 `squaresCopy[square] = nextValue`
     //
     // 🐨 set the squares to your copy
+    const squaresCopy = [...squares]
+    squaresCopy[square] = calculateNextValue(squares)
+    setSquares(squaresCopy)
   }
 
   function restart() {
+    setSquares(Array(9).fill(null))
     // 🐨 reset the squares
     // 💰 `Array(9).fill(null)` will do it!
   }
@@ -49,7 +73,13 @@ function Board() {
   return (
     <div>
       {/* 🐨 put the status in the div below */}
-      <div className="status">STATUS</div>
+      <div className="status">
+        {calculateStatus(
+          calculateWinner(squares),
+          squares,
+          calculateNextValue(squares),
+        )}
+      </div>
       <div className="board-row">
         {renderSquare(0)}
         {renderSquare(1)}
